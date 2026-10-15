@@ -22,8 +22,8 @@ export default function HomeScreen() {
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          // Dynamic route: opens app/(protected)/post/[id].tsx with this post's id
-          <Link href={`/post/${item.id}`} style={styles.card}>
+          // Dynamic route: opens app/(protected)/postDetails/[id].tsx with this post's id
+          <Link href={`/postDetails/${item.id}`} style={styles.card}>
             <Text style={styles.title}>{item.title}</Text>
           </Link>
         )}
