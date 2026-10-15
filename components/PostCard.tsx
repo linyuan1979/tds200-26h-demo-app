@@ -5,6 +5,9 @@ import { PostData } from "@/types/post";
 
 // One post in the Home list. Tapping it opens the detail page.
 export default function PostCard({ post }: { post: PostData }) {
+  // Posts from Phase 3/4 have no likes field, so use ?? []
+  const likeCount = (post.likes ?? []).length;
+
   return (
     // asChild: Link passes its navigation to the Pressable instead of rendering its own <Text>
     <Link href={`/postDetails/${post.id}`} asChild>
@@ -14,10 +17,10 @@ export default function PostCard({ post }: { post: PostData }) {
           <Text style={styles.title}>{post.title}</Text>
           <View style={styles.row}>
             <Text style={styles.author}>By {post.authorName}</Text>
-            {/* Posts from Phase 3/4 have no likes field, so use ?? [] */}
+            {/* Gray heart when nobody has liked it yet, red heart otherwise */}
             <View style={styles.likes}>
-              <Ionicons name="heart" size={16} color="#FF3B30" />
-              <Text style={styles.likesText}>{(post.likes ?? []).length}</Text>
+              <Ionicons name="heart" size={16} color={likeCount > 0 ? "#FF3B30" : "#c7c7cc"} />
+              <Text style={styles.likesText}>{likeCount}</Text>
             </View>
           </View>
         </View>

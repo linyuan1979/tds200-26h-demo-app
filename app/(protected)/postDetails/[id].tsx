@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "@/context/AuthContext";
-import { PostData } from "@/types/post";
+import { PostData, Like } from "@/types/post";
 import { getPostById, deletePost, toggleLike } from "@/api/postApi";
 
 // Detail screen. The [id] in the file name becomes a URL parameter.
@@ -43,12 +43,16 @@ export default function PostDetailScreen() {
   async function handleToggleLike() {
     if (!post || !user) return;
     const oldLikes = post.likes ?? [];
-    const liked = oldLikes.includes(user.uid);
-    const newLikes = liked ? oldLikes.filter((uid) => uid !== user.uid) : [...oldLikes, user.uid];
+
+    // Did I already like it? Then remove the exact object that is stored.
+    const myLike = oldLikes.find((like) => like.uid === user.uid);
+    const like: Like = myLike ?? { uid: user.uid, name: user.displayName ?? "Anonymous" };
+    const liked = myLike !== undefined;
+    const newLikes = liked ? oldLikes.filter((l) => l.uid !== user.uid) : [...oldLikes, like];
 
     setPost({ ...post, likes: newLikes });
     try {
-      await toggleLike(post.id, user.uid, liked);
+      await toggleLike(post.id, like, liked);
     } catch (e) {
       console.error("Failed to update like:", e);
       setPost({ ...post, likes: oldLikes });
@@ -95,7 +99,7 @@ export default function PostDetailScreen() {
 
   const isOwner = post.authorId === user?.uid;
   const likes = post.likes ?? []; // posts from Phase 3/4 have no likes field
-  const isLiked = user ? likes.includes(user.uid) : false;
+  const isLiked = likes.some((like) => like.uid === user?.uid);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -125,6 +129,13 @@ export default function PostDetailScreen() {
           {likes.length} {likes.length === 1 ? "like" : "likes"}
         </Text>
       </View>
+
+      {/* Who liked this post */}
+      <Text style={styles.likedBy}>
+        {likes.length === 0
+          ? "No likes yet. Be the first!"
+          : `Liked by ${likes.map((like) => like.name).join(", ")}`}
+      </Text>
 
       {/* Only the author can delete their own post */}
       {isOwner && (
@@ -156,6 +167,7 @@ const styles = StyleSheet.create({
   likeButton: { flexDirection: "row", alignItems: "center", gap: 6 },
   likeLabel: { fontSize: 16, color: "#333" },
   likeCount: { fontSize: 15, color: "gray" },
+  likedBy: { fontSize: 14, color: "#333", marginTop: 12, lineHeight: 20 },
   deleteButton: {
     marginTop: 32,
     paddingVertical: 12,

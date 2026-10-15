@@ -13,7 +13,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
-import { PostData, NewPostData } from "@/types/post";
+import { PostData, NewPostData, Like } from "@/types/post";
 
 const POSTS_COLLECTION = "posts";
 
@@ -34,7 +34,7 @@ export async function createPost(data: NewPostData): Promise<void> {
 // READ ALL — newest first.
 export async function getAllPosts(): Promise<PostData[]> {
   const snapshot = await getDocs(
-    query(collection(db, POSTS_COLLECTION), orderBy("createdAt", "desc"))
+    query(collection(db, POSTS_COLLECTION), orderBy("createdAt", "desc")),
   );
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as PostData);
 }
@@ -51,10 +51,11 @@ export async function deletePost(id: string): Promise<void> {
   await deleteDoc(doc(db, POSTS_COLLECTION, id));
 }
 
-// LIKE / UNLIKE — add or remove the user's UID in the post's likes array.
-// arrayUnion adds it only if it is not already there; arrayRemove removes it if it is.
-export async function toggleLike(postId: string, userId: string, liked: boolean): Promise<void> {
+// LIKE / UNLIKE — add or remove one { uid, name } object in the post's likes array.
+// arrayUnion adds it only if it is not already there.
+// arrayRemove removes items that are exactly equal, so pass the same object that is stored.
+export async function toggleLike(postId: string, like: Like, liked: boolean): Promise<void> {
   await updateDoc(doc(db, POSTS_COLLECTION, postId), {
-    likes: liked ? arrayRemove(userId) : arrayUnion(userId),
+    likes: liked ? arrayRemove(like) : arrayUnion(like),
   });
 }

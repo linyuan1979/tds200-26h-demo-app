@@ -8,8 +8,15 @@ export interface PostData {
   imageUrl: string; // Firebase Storage download URL
   authorId: string; // Firebase UID of the person who wrote it
   authorName: string; // their displayName, for showing in the UI
-  likes: string[]; // UIDs of the users who liked this post
+  likes: Like[]; // the users who liked this post
   createdAt?: Timestamp; // set by Firestore with serverTimestamp()
+}
+
+// One like: who liked the post.
+// uid tells us "did I like it?"; name is shown in the "Liked by" list.
+export interface Like {
+  uid: string;
+  name: string;
 }
 
 // What the form gives us when creating a post.

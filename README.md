@@ -13,7 +13,7 @@ so you can look at the code as it was after any phase.
 | `phase-2` | Sign in / register / sign out with Firebase Authentication |
 | `phase-3` | Posts saved in Firestore: list, details, delete your own post |
 | `phase-4` | A photo on every post: gallery (`expo-image-picker`) or camera (`expo-camera`), uploaded to Firebase Storage |
-| `phase-5` | Likes: like / unlike a post and see how many users liked it |
+| `phase-5` | Likes: like / unlike a post, like count on Home, who liked it on the detail page |
 
 ```bash
 git checkout phase-1   # look at Phase 1
@@ -236,36 +236,45 @@ Things to notice:
 
 ## Phase 5: Likes
 
-**Goal:** signed-in users can like a post, and everyone sees how many likes it has.
+**Goal:** signed-in users can like a post. Home shows how many likes each post has,
+and the detail page shows who liked it.
 
 | File | What it does |
 |------|--------------|
-| `types/post.ts` | `likes: string[]` on `PostData`: the UIDs of the users who liked the post |
-| `api/postApi.ts` | New posts start with `likes: []`. New `toggleLike(postId, userId, liked)` |
-| `app/(protected)/postDetails/[id].tsx` | Heart button (filled when you have liked it) and "N likes" |
-| `components/PostCard.tsx` | Shows the like count on every post in the Home list |
+| `types/post.ts` | New `Like` type (`{ uid, name }`) and `likes: Like[]` on `PostData` |
+| `api/postApi.ts` | New posts start with `likes: []`. New `toggleLike(postId, like, liked)` |
+| `components/PostCard.tsx` | Heart + count on every Home card: **gray** heart when nobody has liked it, **red** when someone has |
+| `app/(protected)/postDetails/[id].tsx` | Like button (filled when *you* have liked it), "N likes", and "Liked by Ada, Bob" |
 
 How likes are stored, right inside the post:
 
 ```
 posts/{postId}
-  likes: ["uidOfAda", "uidOfBob"]     ← 2 likes
+  likes: [
+    { uid: "uidOfAda", name: "Ada" },
+    { uid: "uidOfBob", name: "Bob" }      ← 2 likes
+  ]
 ```
 
-| Action | Firestore call |
-|--------|----------------|
-| Like | `updateDoc(post, { likes: arrayUnion(myUid) })` |
-| Unlike | `updateDoc(post, { likes: arrayRemove(myUid) })` |
+| Action | Code |
+|--------|------|
+| Like | `updateDoc(post, { likes: arrayUnion({ uid, name }) })` |
+| Unlike | `updateDoc(post, { likes: arrayRemove(myLike) })` (the exact object that is stored) |
 | How many likes? | `post.likes.length` |
-| Did I like it? | `post.likes.includes(myUid)` |
+| Did I like it? | `post.likes.some((like) => like.uid === myUid)` |
+| Who liked it? | `post.likes.map((like) => like.name).join(", ")` |
 
 Things to notice:
 
-- **We store UIDs, not names.** The UID is unique, so the same person can never like a
-  post twice, and two people with the same name still count as two likes.
-- **`arrayUnion` / `arrayRemove`** change just that one value in the array on the server.
-  We never send the whole array, so two people liking at the same time don't overwrite
-  each other.
+- **Why store the name too?** Firebase Auth can't look up another user's name from
+  their UID in the app. Saving `{ uid, name }` together means the detail page can show
+  "Liked by …" without any extra reads.
+- **Check "did I like it?" with the UID, not the name.** The UID is unique; two people
+  can have the same name.
+- **`arrayRemove` only removes items that are exactly equal.** That is why we find *my*
+  stored like (`find(...)`) and pass that same object to `arrayRemove`.
+- **`arrayUnion` / `arrayRemove`** change just that one item in the array on the server,
+  so two people liking at the same time don't overwrite each other.
 - **Optimistic update:** the heart changes straight away (`setPost(...)`), then Firestore
   is updated. If saving fails, the old likes are put back.
 - Posts created in Phase 3 or 4 have no `likes` field, so the code uses
@@ -273,11 +282,13 @@ Things to notice:
 
 ### Try it
 
-- [ ] Tap the heart on a post. It turns red and the count goes up by 1
-- [ ] Tap it again. It goes back to an outline and the count goes down
-- [ ] Go back to Home. The card shows the new count
-- [ ] Like the same post from a second account. The count is 2
-- [ ] In the Firebase console, the post's `likes` array has the users' UIDs
+- [ ] On Home, a post nobody has liked shows a gray heart and 0
+- [ ] On the detail page, tap **Like**. The heart turns red, the count goes up,
+      and your name appears under "Liked by"
+- [ ] Tap it again. The heart goes back to an outline and your name disappears
+- [ ] Go back to Home. The card shows a red heart and the new count
+- [ ] Like the same post from a second account. Both names are listed
+- [ ] In the Firebase console, the post's `likes` array has `{ uid, name }` objects
 
 ---
 
