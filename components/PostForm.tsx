@@ -10,13 +10,23 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Image,
+  Alert,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 // What the form gives back to the screen when the user presses "Post".
-// Phase 4 adds the picked image here.
+// imageUri is the photo's local address on this device; Home uploads it to Storage.
 export type PostFormValues = {
   title: string;
   description: string;
+  imageUri: string;
+};
+
+// Smaller files upload faster (0 = smallest, 1 = best quality).
+const IMAGE_OPTIONS: ImagePicker.ImagePickerOptions = {
+  mediaTypes: ["images"],
+  quality: 0.5,
 };
 
 type PostFormProps = {
@@ -32,20 +42,46 @@ type PostFormProps = {
 export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [titleError, setTitleError] = useState("");
+  const [imageError, setImageError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  async function handleSubmit() {
-    if (!title.trim()) {
-      setTitleError("Title is required.");
+  // Gallery: no permission prompt needed, the system photo picker handles privacy.
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync(IMAGE_OPTIONS);
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      setImageError("");
+    }
+  }
+
+  // Camera: we must ask for permission first.
+  // Note: the iOS Simulator has no camera, so test this on a real phone.
+  async function takePhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Camera access needed", "Allow camera access in Settings to take a photo.");
       return;
     }
+    const result = await ImagePicker.launchCameraAsync(IMAGE_OPTIONS);
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      setImageError("");
+    }
+  }
+
+  async function handleSubmit() {
+    // Check both fields, so the user sees every problem at once
+    if (!title.trim()) setTitleError("Title is required.");
+    if (!imageUri) setImageError("Please choose or take a photo.");
+    if (!title.trim() || !imageUri) return;
 
     setSaving(true);
     setSaveError("");
     try {
-      await onSubmit({ title: title.trim(), description: description.trim() });
+      await onSubmit({ title: title.trim(), description: description.trim(), imageUri });
       resetForm();
       onClose();
     } catch (e) {
@@ -65,7 +101,9 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
   function resetForm() {
     setTitle("");
     setDescription("");
+    setImageUri(null);
     setTitleError("");
+    setImageError("");
     setSaveError("");
   }
 
@@ -121,6 +159,19 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
             multiline
             numberOfLines={4}
           />
+
+          {/* Photo — required */}
+          <Text style={styles.label}>Photo *</Text>
+          {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} /> : null}
+          <View style={styles.photoButtons}>
+            <TouchableOpacity style={styles.photoButton} onPress={pickImage} disabled={saving}>
+              <Text style={styles.photoButtonText}>Choose photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.photoButton} onPress={takePhoto} disabled={saving}>
+              <Text style={styles.photoButtonText}>Take photo</Text>
+            </TouchableOpacity>
+          </View>
+          {imageError ? <Text style={styles.imageError}>{imageError}</Text> : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -179,6 +230,33 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     textAlignVertical: "top",
+  },
+  preview: {
+    width: "100%",
+    aspectRatio: 4 / 3,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  photoButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  photoButton: {
+    flex: 1,
+    backgroundColor: "#f2f2f7",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  photoButtonText: {
+    fontSize: 15,
+    color: "#007AFF",
+    fontWeight: "600",
+  },
+  imageError: {
+    color: "#FF3B30",
+    fontSize: 13,
+    marginTop: 6,
   },
   saveError: {
     color: "#FF3B30",

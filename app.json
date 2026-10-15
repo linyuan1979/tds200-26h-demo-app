@@ -25,7 +25,15 @@
     "plugins": [
       "expo-router",
       "expo-status-bar",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to choose photos for your posts.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to take photos for your posts.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "scheme": "demoapp",
     "experiments": {

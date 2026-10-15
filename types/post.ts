@@ -5,6 +5,7 @@ export interface PostData {
   id: string;
   title: string;
   description: string;
+  imageUrl: string; // Firebase Storage download URL
   authorId: string; // Firebase UID of the person who wrote it
   authorName: string; // their displayName, for showing in the UI
   createdAt?: Timestamp; // set by Firestore with serverTimestamp()
@@ -15,4 +16,5 @@ export interface PostData {
 export interface NewPostData {
   title: string;
   description: string;
+  imageUrl: string;
 }

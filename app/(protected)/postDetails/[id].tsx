@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Image,
   StyleSheet,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
@@ -81,6 +82,8 @@ export default function PostDetailScreen() {
       {/* Sets this screen's header title from inside the screen */}
       <Stack.Screen options={{ title: post.title }} />
 
+      {post.imageUrl ? <Image source={{ uri: post.imageUrl }} style={styles.image} /> : null}
+
       <Text style={styles.title}>{post.title}</Text>
       <Text style={styles.meta}>
         By {post.authorName}
@@ -101,6 +104,7 @@ export default function PostDetailScreen() {
 const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   container: { padding: 20, backgroundColor: "white", flexGrow: 1 },
+  image: { width: "100%", aspectRatio: 4 / 3, borderRadius: 10, marginBottom: 16 },
   title: { fontSize: 24, fontWeight: "bold" },
   meta: { fontSize: 14, color: "gray", marginTop: 4, marginBottom: 16 },
   description: { fontSize: 16, color: "#333", lineHeight: 22 },

@@ -13,6 +13,7 @@ import PostForm, { PostFormValues } from "@/components/PostForm";
 import PostCard from "@/components/PostCard";
 import { PostData } from "@/types/post";
 import { getAllPosts, createPost } from "@/api/postApi";
+import { uploadImage } from "@/api/imageApi";
 
 export default function HomeScreen() {
   const [posts, setPosts] = useState<PostData[]>([]);
@@ -49,7 +50,10 @@ export default function HomeScreen() {
 
   // Called by PostForm. If this throws, PostForm stays open and shows an error.
   async function handleNewPost(values: PostFormValues) {
-    await createPost(values);
+    // 1. Upload the photo first, so we have its https:// URL to save in the post.
+    const imageUrl = await uploadImage(values.imageUri);
+    // 2. Save the post with that URL.
+    await createPost({ title: values.title, description: values.description, imageUrl });
     // Closing a <Modal> does not trigger useFocusEffect, so reload here.
     await loadPosts();
   }
