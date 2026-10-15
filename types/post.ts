@@ -8,6 +8,7 @@ export interface PostData {
   imageUrl: string; // Firebase Storage download URL
   authorId: string; // Firebase UID of the person who wrote it
   authorName: string; // their displayName, for showing in the UI
+  likes: string[]; // UIDs of the users who liked this post
   createdAt?: Timestamp; // set by Firestore with serverTimestamp()
 }
 

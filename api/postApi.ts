@@ -5,6 +5,9 @@ import {
   getDoc,
   doc,
   deleteDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
   query,
   orderBy,
   serverTimestamp,
@@ -23,6 +26,7 @@ export async function createPost(data: NewPostData): Promise<void> {
     ...data,
     authorId: user.uid,
     authorName: user.displayName ?? "Anonymous",
+    likes: [], // nobody has liked it yet
     createdAt: serverTimestamp(), // the server's time, not the phone's
   });
 }
@@ -45,4 +49,12 @@ export async function getPostById(id: string): Promise<PostData | null> {
 // DELETE
 export async function deletePost(id: string): Promise<void> {
   await deleteDoc(doc(db, POSTS_COLLECTION, id));
+}
+
+// LIKE / UNLIKE — add or remove the user's UID in the post's likes array.
+// arrayUnion adds it only if it is not already there; arrayRemove removes it if it is.
+export async function toggleLike(postId: string, userId: string, liked: boolean): Promise<void> {
+  await updateDoc(doc(db, POSTS_COLLECTION, postId), {
+    likes: liked ? arrayRemove(userId) : arrayUnion(userId),
+  });
 }

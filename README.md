@@ -13,10 +13,11 @@ so you can look at the code as it was after any phase.
 | `phase-2` | Sign in / register / sign out with Firebase Authentication |
 | `phase-3` | Posts saved in Firestore: list, details, delete your own post |
 | `phase-4` | A photo on every post: gallery (`expo-image-picker`) or camera (`expo-camera`), uploaded to Firebase Storage |
+| `phase-5` | Likes: like / unlike a post and see how many users liked it |
 
 ```bash
 git checkout phase-1   # look at Phase 1
-git checkout phase-4   # look at Phase 4
+git checkout phase-5   # look at Phase 5
 npm install            # run again if the dependencies changed
 ```
 
@@ -233,9 +234,53 @@ Things to notice:
 - [ ] After saving, the image shows on Home and on the detail page
 - [ ] The file appears in the Firebase console under **Storage → posts → (your uid)**
 
+## Phase 5: Likes
+
+**Goal:** signed-in users can like a post, and everyone sees how many likes it has.
+
+| File | What it does |
+|------|--------------|
+| `types/post.ts` | `likes: string[]` on `PostData`: the UIDs of the users who liked the post |
+| `api/postApi.ts` | New posts start with `likes: []`. New `toggleLike(postId, userId, liked)` |
+| `app/(protected)/postDetails/[id].tsx` | Heart button (filled when you have liked it) and "N likes" |
+| `components/PostCard.tsx` | Shows the like count on every post in the Home list |
+
+How likes are stored, right inside the post:
+
+```
+posts/{postId}
+  likes: ["uidOfAda", "uidOfBob"]     ← 2 likes
+```
+
+| Action | Firestore call |
+|--------|----------------|
+| Like | `updateDoc(post, { likes: arrayUnion(myUid) })` |
+| Unlike | `updateDoc(post, { likes: arrayRemove(myUid) })` |
+| How many likes? | `post.likes.length` |
+| Did I like it? | `post.likes.includes(myUid)` |
+
+Things to notice:
+
+- **We store UIDs, not names.** The UID is unique, so the same person can never like a
+  post twice, and two people with the same name still count as two likes.
+- **`arrayUnion` / `arrayRemove`** change just that one value in the array on the server.
+  We never send the whole array, so two people liking at the same time don't overwrite
+  each other.
+- **Optimistic update:** the heart changes straight away (`setPost(...)`), then Firestore
+  is updated. If saving fails, the old likes are put back.
+- Posts created in Phase 3 or 4 have no `likes` field, so the code uses
+  `post.likes ?? []` to be safe.
+
+### Try it
+
+- [ ] Tap the heart on a post. It turns red and the count goes up by 1
+- [ ] Tap it again. It goes back to an outline and the count goes down
+- [ ] Go back to Home. The card shows the new count
+- [ ] Like the same post from a second account. The count is 2
+- [ ] In the Firebase console, the post's `likes` array has the users' UIDs
+
 ---
 
 ## Coming next
 
-- **Phase 5:** comments (add, edit and delete your own)
 - **Phase 6:** security rules and a concepts guide

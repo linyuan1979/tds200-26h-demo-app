@@ -11,9 +11,10 @@ import {
   Image,
   StyleSheet,
 } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "@/context/AuthContext";
 import { PostData } from "@/types/post";
-import { getPostById, deletePost } from "@/api/postApi";
+import { getPostById, deletePost, toggleLike } from "@/api/postApi";
 
 // Detail screen. The [id] in the file name becomes a URL parameter.
 export default function PostDetailScreen() {
@@ -36,6 +37,23 @@ export default function PostDetailScreen() {
     }
     loadPost();
   }, [id]);
+
+  // LIKE — optimistic update: change the screen first, then save to Firestore.
+  // If saving fails, put the old likes back.
+  async function handleToggleLike() {
+    if (!post || !user) return;
+    const oldLikes = post.likes ?? [];
+    const liked = oldLikes.includes(user.uid);
+    const newLikes = liked ? oldLikes.filter((uid) => uid !== user.uid) : [...oldLikes, user.uid];
+
+    setPost({ ...post, likes: newLikes });
+    try {
+      await toggleLike(post.id, user.uid, liked);
+    } catch (e) {
+      console.error("Failed to update like:", e);
+      setPost({ ...post, likes: oldLikes });
+    }
+  }
 
   async function confirmAndDelete() {
     try {
@@ -76,6 +94,8 @@ export default function PostDetailScreen() {
   }
 
   const isOwner = post.authorId === user?.uid;
+  const likes = post.likes ?? []; // posts from Phase 3/4 have no likes field
+  const isLiked = user ? likes.includes(user.uid) : false;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -90,6 +110,21 @@ export default function PostDetailScreen() {
         {post.createdAt ? ` · ${post.createdAt.toDate().toLocaleDateString()}` : ""}
       </Text>
       {post.description ? <Text style={styles.description}>{post.description}</Text> : null}
+
+      {/* Like button + how many users liked this post */}
+      <View style={styles.likeRow}>
+        <TouchableOpacity style={styles.likeButton} onPress={handleToggleLike}>
+          <Ionicons
+            name={isLiked ? "heart" : "heart-outline"}
+            size={24}
+            color={isLiked ? "#FF3B30" : "gray"}
+          />
+          <Text style={styles.likeLabel}>{isLiked ? "Liked" : "Like"}</Text>
+        </TouchableOpacity>
+        <Text style={styles.likeCount}>
+          {likes.length} {likes.length === 1 ? "like" : "likes"}
+        </Text>
+      </View>
 
       {/* Only the author can delete their own post */}
       {isOwner && (
@@ -108,6 +143,19 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: "bold" },
   meta: { fontSize: 14, color: "gray", marginTop: 4, marginBottom: 16 },
   description: { fontSize: 16, color: "#333", lineHeight: 22 },
+  likeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 24,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+  likeButton: { flexDirection: "row", alignItems: "center", gap: 6 },
+  likeLabel: { fontSize: 16, color: "#333" },
+  likeCount: { fontSize: 15, color: "gray" },
   deleteButton: {
     marginTop: 32,
     paddingVertical: 12,

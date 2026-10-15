@@ -1,5 +1,6 @@
 import { Link } from "expo-router";
 import { Pressable, View, Text, Image, StyleSheet } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { PostData } from "@/types/post";
 
 // One post in the Home list. Tapping it opens the detail page.
@@ -11,7 +12,14 @@ export default function PostCard({ post }: { post: PostData }) {
         {post.imageUrl ? <Image source={{ uri: post.imageUrl }} style={styles.image} /> : null}
         <View style={styles.body}>
           <Text style={styles.title}>{post.title}</Text>
-          <Text style={styles.author}>By {post.authorName}</Text>
+          <View style={styles.row}>
+            <Text style={styles.author}>By {post.authorName}</Text>
+            {/* Posts from Phase 3/4 have no likes field, so use ?? [] */}
+            <View style={styles.likes}>
+              <Ionicons name="heart" size={16} color="#FF3B30" />
+              <Text style={styles.likesText}>{(post.likes ?? []).length}</Text>
+            </View>
+          </View>
         </View>
       </Pressable>
     </Link>
@@ -29,5 +37,8 @@ const styles = StyleSheet.create({
   image: { width: "100%", height: 180 },
   body: { padding: 16 },
   title: { fontSize: 17, fontWeight: "600" },
-  author: { fontSize: 14, color: "gray", marginTop: 4 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
+  author: { fontSize: 14, color: "gray" },
+  likes: { flexDirection: "row", alignItems: "center", gap: 4 },
+  likesText: { fontSize: 14, color: "gray" },
 });
