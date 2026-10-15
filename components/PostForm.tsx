@@ -162,9 +162,12 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
             <TouchableOpacity style={styles.photoButton} onPress={pickImage} disabled={saving}>
               <Text style={styles.photoButtonText}>Choose photo</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.photoButton} onPress={takePhoto} disabled={saving}>
-              <Text style={styles.photoButtonText}>Take photo</Text>
-            </TouchableOpacity>
+            {/* The camera only works on a phone, so hide this button on web */}
+            {Platform.OS !== "web" && (
+              <TouchableOpacity style={styles.photoButton} onPress={takePhoto} disabled={saving}>
+                <Text style={styles.photoButtonText}>Take photo</Text>
+              </TouchableOpacity>
+            )}
           </View>
           {imageError ? <Text style={styles.imageError}>{imageError}</Text> : null}
         </ScrollView>

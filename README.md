@@ -207,6 +207,8 @@ Things to notice:
 - **Permissions:** the gallery uses the system photo picker, so no permission prompt is
   needed. The camera always asks first.
 - **The iOS Simulator has no camera.** Test **Take photo** on a real phone with Expo Go.
+- **No camera on web.** In the browser, `expo-image-picker` cannot open the webcam, so
+  **Take photo** is hidden there (`Platform.OS !== "web"`). **Choose photo** still works.
 
 ### Try it
 
