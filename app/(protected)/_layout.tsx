@@ -8,7 +8,7 @@ export default function ProtectedLayout() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="post/[id]" options={{ title: "Post", headerBackTitle: "Back" }} />
+      <Stack.Screen name="postDetails/[id]" options={{ title: "Post", headerBackTitle: "Back" }} />
     </Stack>
   );
 }
