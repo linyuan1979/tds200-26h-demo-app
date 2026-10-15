@@ -11,9 +11,9 @@ import {
   Platform,
   ActivityIndicator,
   Image,
-  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import PhotoCamera from "@/components/PhotoCamera";
 
 // What the form gives back to the screen when the user presses "Post".
 // imageUri is the photo's local address on this device; Home uploads it to Storage.
@@ -37,6 +37,7 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false); // true = show the camera instead of the form
   const [titleError, setTitleError] = useState("");
   const [imageError, setImageError] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -45,26 +46,22 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
   // Gallery: no permission prompt needed, the system photo picker handles privacy.
   async function pickImage() {
     // quality 0.5: smaller files upload faster (0 = smallest, 1 = best quality)
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.5 });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.5,
+    });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
       setImageError("");
     }
   }
 
-  // Camera: we must ask for permission first.
-  // Note: the iOS Simulator has no camera, so test this on a real phone.
-  async function takePhoto() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Camera access needed", "Allow camera access in Settings to take a photo.");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.5 });
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-      setImageError("");
-    }
+  // Camera: PhotoCamera (expo-camera) gives us the photo's uri.
+  // Note: the iOS Simulator has no camera, so test this on a real phone or in the browser.
+  function handleCapture(uri: string) {
+    setImageUri(uri);
+    setImageError("");
+    setCameraOpen(false);
   }
 
   async function handleSubmit() {
@@ -89,6 +86,10 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
 
   function handleClose() {
     if (saving) return; // don't close while the post is being saved
+    if (cameraOpen) {
+      setCameraOpen(false); // Android back button: leave the camera, keep the form
+      return;
+    }
     resetForm();
     onClose();
   }
@@ -97,6 +98,7 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
     setTitle("");
     setDescription("");
     setImageUri(null);
+    setCameraOpen(false);
     setTitleError("");
     setImageError("");
     setSaveError("");
@@ -109,69 +111,74 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
       presentationStyle="pageSheet"
       onRequestClose={handleClose} // Android back button
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose}>
-            <Text style={styles.cancelButton}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.heading}>New Post</Text>
-          {saving ? (
-            <ActivityIndicator />
-          ) : (
-            <TouchableOpacity onPress={handleSubmit}>
-              <Text style={styles.submitButton}>Post</Text>
+      {cameraOpen ? (
+        <PhotoCamera onCapture={handleCapture} onCancel={() => setCameraOpen(false)} />
+      ) : (
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleClose}>
+              <Text style={styles.cancelButton}>Cancel</Text>
             </TouchableOpacity>
-          )}
-        </View>
-
-        <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
-          {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
-
-          {/* Title — required */}
-          <Text style={styles.label}>Title *</Text>
-          <TextInput
-            style={[styles.input, titleError ? styles.inputError : null]}
-            placeholder="What is this post about?"
-            value={title}
-            onChangeText={(text) => {
-              setTitle(text);
-              if (titleError) setTitleError("");
-            }}
-            autoFocus
-          />
-          {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
-
-          {/* Description — optional */}
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Add more details…"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
-
-          {/* Photo — required */}
-          <Text style={styles.label}>Photo *</Text>
-          {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} /> : null}
-          <View style={styles.photoButtons}>
-            <TouchableOpacity style={styles.photoButton} onPress={pickImage} disabled={saving}>
-              <Text style={styles.photoButtonText}>Choose photo</Text>
-            </TouchableOpacity>
-            {/* The camera only works on a phone, so hide this button on web */}
-            {Platform.OS !== "web" && (
-              <TouchableOpacity style={styles.photoButton} onPress={takePhoto} disabled={saving}>
-                <Text style={styles.photoButtonText}>Take photo</Text>
+            <Text style={styles.heading}>New Post</Text>
+            {saving ? (
+              <ActivityIndicator />
+            ) : (
+              <TouchableOpacity onPress={handleSubmit}>
+                <Text style={styles.submitButton}>Post</Text>
               </TouchableOpacity>
             )}
           </View>
-          {imageError ? <Text style={styles.imageError}>{imageError}</Text> : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
+            {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
+
+            {/* Title — required */}
+            <Text style={styles.label}>Title *</Text>
+            <TextInput
+              style={[styles.input, titleError ? styles.inputError : null]}
+              placeholder="What is this post about?"
+              value={title}
+              onChangeText={(text) => {
+                setTitle(text);
+                if (titleError) setTitleError("");
+              }}
+              autoFocus
+            />
+            {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
+
+            {/* Description — optional */}
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Add more details…"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+            />
+
+            {/* Photo — required */}
+            <Text style={styles.label}>Photo *</Text>
+            {imageUri ? <Image source={{ uri: imageUri }} style={styles.preview} /> : null}
+            <View style={styles.photoButtons}>
+              <TouchableOpacity style={styles.photoButton} onPress={pickImage} disabled={saving}>
+                <Text style={styles.photoButtonText}>Choose photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.photoButton}
+                onPress={() => setCameraOpen(true)}
+                disabled={saving}
+              >
+                <Text style={styles.photoButtonText}>Take photo</Text>
+              </TouchableOpacity>
+            </View>
+            {imageError ? <Text style={styles.imageError}>{imageError}</Text> : null}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      )}
     </Modal>
   );
 }

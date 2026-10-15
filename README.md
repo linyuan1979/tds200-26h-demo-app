@@ -12,7 +12,7 @@ so you can look at the code as it was after any phase.
 | `phase-1` | Project setup, navigation, create-post popup (local only) |
 | `phase-2` | Sign in / register / sign out with Firebase Authentication |
 | `phase-3` | Posts saved in Firestore: list, details, delete your own post |
-| `phase-4` | A photo on every post: gallery or camera, uploaded to Firebase Storage |
+| `phase-4` | A photo on every post: gallery (`expo-image-picker`) or camera (`expo-camera`), uploaded to Firebase Storage |
 
 ```bash
 git checkout phase-1   # look at Phase 1
@@ -186,12 +186,16 @@ Things to notice:
 
 **Goal:** every post has a photo, taken with the camera or chosen from the gallery.
 
-New package: `expo-image-picker` (installed with `npx expo install expo-image-picker`).
+New packages, installed with `npx expo install expo-image-picker expo-camera`:
+
+- `expo-image-picker`: choose a photo from the gallery
+- `expo-camera`: a live camera view inside the app. It also works in the browser (webcam).
 
 | File | What it does |
 |------|--------------|
-| `app.json` | Adds the `expo-image-picker` plugin with the text iOS shows when asking for photo / camera access |
-| `components/PostForm.tsx` | **Choose photo** (`launchImageLibraryAsync`) and **Take photo** (`requestCameraPermissionsAsync` + `launchCameraAsync`), a preview, and "Photo is required" validation |
+| `app.json` | Adds the `expo-image-picker` and `expo-camera` plugins with the text iOS shows when asking for photo / camera access |
+| `components/PhotoCamera.tsx` | Camera screen: `useCameraPermissions`, `<CameraView>`, a shutter button that calls `takePictureAsync`, and a Flip button (front / back) |
+| `components/PostForm.tsx` | **Choose photo** (`launchImageLibraryAsync`), **Take photo** (shows `PhotoCamera` in place of the form), a preview, and "Photo is required" validation |
 | `api/imageApi.ts` | `uploadImage(localUri)`: reads the file with `fetch(...).blob()`, uploads it to `posts/{uid}/{time}.jpg` with `uploadBytes`, and returns the `getDownloadURL` link |
 | `app/(protected)/(tabs)/index.tsx` | Saving a post now means: 1) upload the photo, 2) save the post with its `imageUrl` |
 | `types/post.ts` | `imageUrl` added to `PostData` and `NewPostData` |
@@ -205,16 +209,23 @@ Things to notice:
 - **Upload first, then save.** If the upload fails, no post is created, and the form
   stays open with an error.
 - **Permissions:** the gallery uses the system photo picker, so no permission prompt is
-  needed. The camera always asks first.
-- **The iOS Simulator has no camera.** Test **Take photo** on a real phone with Expo Go.
-- **No camera on web.** In the browser, `expo-image-picker` cannot open the webcam, so
-  **Take photo** is hidden there (`Platform.OS !== "web"`). **Choose photo** still works.
+  needed. The camera asks first: `PhotoCamera` shows an **Allow camera** button until
+  permission is granted.
+- **`useRef`:** `PhotoCamera` keeps a ref to `<CameraView>` so it can call
+  `cameraRef.current.takePictureAsync()` when you press the shutter.
+- **The camera replaces the form instead of opening a second `<Modal>`.** A modal on
+  top of a modal is unreliable, so `PostForm` just switches what it shows (`cameraOpen`).
+- **Camera on web:** the browser only allows the webcam on `localhost` or `https://`.
+  On web, the photo comes back as a `data:image/…` URL instead of `file://…`, and
+  `uploadImage` handles both.
+- **The iOS Simulator has no camera.** Test **Take photo** on a real phone or in the browser.
 
 ### Try it
 
 - [ ] Pressing **Post** without a photo shows "Please choose or take a photo."
 - [ ] **Choose photo** shows a preview in the form
-- [ ] **Take photo** (real phone) asks for camera access, then shows a preview
+- [ ] **Take photo** asks for camera access, opens the camera, and the shutter puts the photo in the preview
+- [ ] **Take photo** also works in the browser (`npx expo start`, then press `w`)
 - [ ] After saving, the image shows on Home and on the detail page
 - [ ] The file appears in the Firebase console under **Storage → posts → (your uid)**
 

@@ -7,7 +7,7 @@ export async function uploadImage(localUri: string): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new Error("You must be signed in to upload an image.");
 
-  // 1. Read the local file (file://… on a phone, blob:… on web) into a Blob.
+  // 1. Read the photo (file://… on a phone, blob: or data: on web) into a Blob.
   const response = await fetch(localUri);
   const blob = await response.blob();
 
