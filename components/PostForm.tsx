@@ -23,12 +23,6 @@ export type PostFormValues = {
   imageUri: string;
 };
 
-// Smaller files upload faster (0 = smallest, 1 = best quality).
-const IMAGE_OPTIONS: ImagePicker.ImagePickerOptions = {
-  mediaTypes: ["images"],
-  quality: 0.5,
-};
-
 type PostFormProps = {
   visible: boolean;
   onClose: () => void;
@@ -50,7 +44,8 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
 
   // Gallery: no permission prompt needed, the system photo picker handles privacy.
   async function pickImage() {
-    const result = await ImagePicker.launchImageLibraryAsync(IMAGE_OPTIONS);
+    // quality 0.5: smaller files upload faster (0 = smallest, 1 = best quality)
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.5 });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
       setImageError("");
@@ -65,7 +60,7 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
       Alert.alert("Camera access needed", "Allow camera access in Settings to take a photo.");
       return;
     }
-    const result = await ImagePicker.launchCameraAsync(IMAGE_OPTIONS);
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.5 });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
       setImageError("");
