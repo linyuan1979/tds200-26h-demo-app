@@ -1,19 +1,65 @@
-import { useState } from "react";
-import { Link } from "expo-router";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from "react-native";
+import { useState, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
 import PostForm, { PostFormValues } from "@/components/PostForm";
-
-// Phase 1: posts only live in this screen's state (gone after reload).
-// Phase 3 loads and saves them in Firestore instead.
-type LocalPost = PostFormValues & { id: string };
+import PostCard from "@/components/PostCard";
+import { PostData } from "@/types/post";
+import { getAllPosts, createPost } from "@/api/postApi";
 
 export default function HomeScreen() {
-  const [posts, setPosts] = useState<LocalPost[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [loading, setLoading] = useState(true); // first load: full-screen spinner
+  const [refreshing, setRefreshing] = useState(false); // pull-to-refresh spinner
+  const [error, setError] = useState("");
   const [formVisible, setFormVisible] = useState(false);
 
-  function handleNewPost(values: PostFormValues) {
-    const newPost = { id: Date.now().toString(), ...values };
-    setPosts((prev) => [newPost, ...prev]); // newest first
+  // useFocusEffect runs every time this screen comes into view,
+  // e.g. when you go back from the detail page after deleting a post.
+  useFocusEffect(
+    useCallback(() => {
+      loadPosts();
+    }, [])
+  );
+
+  async function loadPosts() {
+    try {
+      setError("");
+      setPosts(await getAllPosts());
+    } catch (e) {
+      console.error("Failed to load posts:", e);
+      setError("Could not load posts. Pull down to try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await loadPosts();
+    setRefreshing(false);
+  }
+
+  // Called by PostForm. If this throws, PostForm stays open and shows an error.
+  async function handleNewPost(values: PostFormValues) {
+    await createPost(values);
+    // Closing a <Modal> does not trigger useFocusEffect, so reload here.
+    await loadPosts();
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
@@ -21,13 +67,13 @@ export default function HomeScreen() {
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          // Dynamic route: opens app/(protected)/postDetails/[id].tsx with this post's id
-          <Link href={`/postDetails/${item.id}`} style={styles.card}>
-            <Text style={styles.title}>{item.title}</Text>
-          </Link>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>No posts yet. Tap + to create one.</Text>}
+        renderItem={({ item }) => <PostCard post={item} />}
+        ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : null}
+        ListEmptyComponent={
+          error ? null : <Text style={styles.empty}>No posts yet. Tap + to create one.</Text>
+        }
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       />
 
       {/* Floating action button (FAB) opens the form popup */}
@@ -49,21 +95,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f2f2f7",
   },
-  card: {
-    backgroundColor: "white",
-    padding: 16,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 10,
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  title: {
-    fontSize: 17,
-    fontWeight: "600",
+  list: {
+    paddingBottom: 100, // room for the FAB
   },
   empty: {
     textAlign: "center",
     marginTop: 40,
     color: "gray",
+  },
+  error: {
+    textAlign: "center",
+    margin: 16,
+    color: "#FF3B30",
   },
   fab: {
     position: "absolute",

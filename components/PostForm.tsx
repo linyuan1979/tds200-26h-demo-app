@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 
 // What the form gives back to the screen when the user presses "Post".
@@ -21,28 +22,42 @@ export type PostFormValues = {
 type PostFormProps = {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (values: PostFormValues) => void;
+  // Returns a Promise so the form can show a spinner until saving is done.
+  // If it throws, the form stays open and shows an error.
+  onSubmit: (values: PostFormValues) => Promise<void>;
 };
 
 // A popup form for creating a post (same Modal pattern as Session 4).
-// The screen that uses it decides what to do with the values (Phase 3: save to Firestore).
+// The screen that uses it decides what to do with the values (Home saves them to Firestore).
 export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [titleError, setTitleError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!title.trim()) {
       setTitleError("Title is required.");
       return;
     }
 
-    onSubmit({ title: title.trim(), description: description.trim() });
-    resetForm();
-    onClose();
+    setSaving(true);
+    setSaveError("");
+    try {
+      await onSubmit({ title: title.trim(), description: description.trim() });
+      resetForm();
+      onClose();
+    } catch (e) {
+      console.error("Failed to save post:", e);
+      setSaveError("Could not save the post. Check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleClose() {
+    if (saving) return; // don't close while the post is being saved
     resetForm();
     onClose();
   }
@@ -51,6 +66,7 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
     setTitle("");
     setDescription("");
     setTitleError("");
+    setSaveError("");
   }
 
   return (
@@ -69,12 +85,18 @@ export default function PostForm({ visible, onClose, onSubmit }: PostFormProps) 
             <Text style={styles.cancelButton}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.heading}>New Post</Text>
-          <TouchableOpacity onPress={handleSubmit}>
-            <Text style={styles.submitButton}>Post</Text>
-          </TouchableOpacity>
+          {saving ? (
+            <ActivityIndicator />
+          ) : (
+            <TouchableOpacity onPress={handleSubmit}>
+              <Text style={styles.submitButton}>Post</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
+          {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
+
           {/* Title — required */}
           <Text style={styles.label}>Title *</Text>
           <TextInput
@@ -157,6 +179,11 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     textAlignVertical: "top",
+  },
+  saveError: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginBottom: 16,
   },
   errorText: {
     color: "#FF3B30",
