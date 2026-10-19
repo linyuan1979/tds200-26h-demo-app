@@ -9,7 +9,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>User info comes in Phase 2</Text>
-      <TouchableOpacity style={styles.button} onPress={() => router.replace("/login")}>
+      <TouchableOpacity style={styles.button} onPress={() => router.replace("/auth")}>
         <Text style={styles.buttonText}>Sign out</Text>
       </TouchableOpacity>
     </View>
