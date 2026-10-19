@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import PostForm, { PostFormValues } from "@/components/PostForm";
 import PostCard from "@/components/PostCard";
-import { PostData } from "@/types/post";
+import { PostData } from "@/utils/postData";
 import { getAllPosts, createPost } from "@/api/postApi";
 
 export default function HomeScreen() {

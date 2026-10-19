@@ -10,7 +10,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
-import { PostData, NewPostData } from "@/types/post";
+import { PostData, NewPostData } from "@/utils/postData";
 
 const POSTS_COLLECTION = "posts";
 

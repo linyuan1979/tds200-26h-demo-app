@@ -12,7 +12,7 @@ export default function ProfileScreen() {
       <Text style={styles.email}>{user?.email}</Text>
 
       {/* No navigation needed: after sign out, user becomes null and
-          the guard in app/(protected)/_layout.tsx redirects to /login. */}
+          the guard in app/(protected)/_layout.tsx redirects to /auth. */}
       <TouchableOpacity style={styles.button} onPress={signOutUser}>
         <Text style={styles.buttonText}>Sign out</Text>
       </TouchableOpacity>

@@ -11,7 +11,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
-import { PostData } from "@/types/post";
+import { PostData } from "@/utils/postData";
 import { getPostById, deletePost } from "@/api/postApi";
 
 // Detail screen. The [id] in the file name becomes a URL parameter.
