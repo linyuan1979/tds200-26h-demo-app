@@ -65,8 +65,8 @@ You need **Node.js** and the **Expo Go** app on your phone (it must support Expo
 - `package.json` uses `"main": "expo-router/entry"`, so Expo Router handles navigation.
   All packages were added with `npx expo install`, which picks versions that match the SDK.
 - **Navigation** (file-based routing with Expo Router):
-  - `app/_layout.tsx`: the root **Stack** with two screens, `login` and `(protected)`.
-  - `app/login.tsx`: a placeholder login screen with a "Continue" button.
+  - `app/_layout.tsx`: the root **Stack** with two screens, `auth` and `(protected)`.
+  - `app/auth.tsx`: a placeholder login screen with a "Continue" button.
   - `app/(protected)/(tabs)/_layout.tsx`: **Tabs** with **Home** and **Profile** (AntDesign icons).
   - `app/(protected)/postDetails/[id].tsx`: a **dynamic route** for one post.
     It is pushed on top of the tabs, so the tab bar hides and a Back button appears.
@@ -87,8 +87,8 @@ You need **Node.js** and the **Expo Go** app on your phone (it must support Expo
 | `api/authApi.ts` | `signInWithEmail`, `signUpWithEmail` (also saves the name with `updateProfile`), `signOutUser`, and friendly error messages for Firebase error codes |
 | `context/AuthContext.tsx` | `AuthProvider` listens to `onAuthStateChanged` and shares `{ user, loading }`. Screens read it with `useAuth()` |
 | `app/_layout.tsx` | Wraps the root Stack in `<AuthProvider>` |
-| `app/(protected)/_layout.tsx` | **Auth guard:** shows a spinner while `loading`, `<Redirect href="/login" />` if there is no user, otherwise the screens |
-| `app/login.tsx` | Sign in / Register toggle, email and password fields (plus name when registering), error text, spinner while waiting |
+| `app/(protected)/_layout.tsx` | **Auth guard:** shows a spinner while `loading`, `<Redirect href="/auth" />` if there is no user, otherwise the screens |
+| `app/auth.tsx` | Sign in / Register toggle, email and password fields (plus name when registering), error text, spinner while waiting |
 | `app/(protected)/(tabs)/profile.tsx` | Shows the user's name and email, and a **Sign out** button |
 
 How the screens change, without any `router.push` calls:
@@ -96,7 +96,7 @@ How the screens change, without any `router.push` calls:
 - **Signing in or registering** sets `user` in `AuthContext`. The login screen
   sees `user` and renders `<Redirect href="/" />`, which goes to Home.
 - **Signing out** sets `user` to `null`. The guard in `app/(protected)/_layout.tsx`
-  renders `<Redirect href="/login" />`.
+  renders `<Redirect href="/auth" />`.
 - **Restarting the app:** `firebaseConfig.ts` saves the session with AsyncStorage
   (localStorage on web), so you stay signed in.
 
