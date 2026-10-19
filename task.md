@@ -22,6 +22,145 @@ main ── phase-1 ── phase-2 ── phase-3 ── phase-4 ── phase-5 
 
 ---
 
+## Create the project from scratch (how `phase-1` was made)
+
+### 1. Create a blank TypeScript project
+
+```bash
+npx create-expo-app@latest demo-app --template blank-typescript@sdk-57
+cd demo-app
+```
+
+`@sdk-57` pins Expo SDK 57, the version this app uses. Without it you get the newest SDK,
+which may not run in your Expo Go app.
+
+The template creates these files:
+
+```
+.gitignore   AGENTS.md   LICENSE
+App.tsx                 index.ts     app.json    package.json   tsconfig.json
+assets/  (icon.png, splash-icon.png, favicon.png, android-icon-*.png)
+```
+
+### 2. Delete the files we don't need
+
+Expo Router finds the screens in the `app/` folder, so the template's own entry
+files are no longer used:
+
+```bash
+rm App.tsx index.ts LICENSE
+```
+
+| File | Why it goes |
+|------|-------------|
+| `App.tsx` | The single screen of a non-router app. Screens now live in `app/` |
+| `index.ts` | Calls `registerRootComponent(App)`. Expo Router has its own entry (`expo-router/entry`) |
+| `LICENSE` | Not needed for a class project |
+
+Keep `assets/`, `app.json`, `tsconfig.json`, `.gitignore` and `AGENTS.md`.
+
+### 3. Install the packages
+
+Always use `npx expo install` (not `npm install`), so the versions match the SDK:
+
+```bash
+# Expo Router and the packages it needs (web support included)
+npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants expo-status-bar react-dom react-native-web
+
+# Icons for the tab bar
+npx expo install @expo/vector-icons expo-font
+
+# Firebase, and AsyncStorage so the user stays signed in (used from Phase 2)
+npx expo install firebase @react-native-async-storage/async-storage
+```
+
+### 4. Change the config files
+
+**`package.json`**: point the entry at Expo Router:
+
+```json
+"main": "expo-router/entry",
+```
+
+**`app.json`**: give the app a name, a deep-link `scheme`, the router plugin and typed routes:
+
+```json
+{
+  "expo": {
+    "name": "Demo App",
+    "slug": "demo-app",
+    "scheme": "demoapp",
+    "web": { "bundler": "metro", "favicon": "./assets/favicon.png" },
+    "plugins": ["expo-router", "expo-status-bar", "expo-font"],
+    "experiments": { "typedRoutes": true }
+  }
+}
+```
+
+(Keep the other keys the template created: `version`, `icon`, `ios`, `android`, …)
+
+**`tsconfig.json`**: add the `@/` import alias and include Expo Router's generated route types:
+
+```json
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": { "@/*": ["./*"] }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}
+```
+
+Now you can write `import PostForm from "@/components/PostForm"` instead of `"../../components/PostForm"`.
+
+**`.gitignore`**: add `.env` at the bottom, so the real Firebase keys are never committed:
+
+```
+.env
+```
+
+### 5. Add the Firebase setup
+
+- `.env.example`: the `EXPO_PUBLIC_FIREBASE_*` variable names with placeholder values.
+  Each student copies it to `.env` and fills in their own values.
+- `firebaseConfig.ts`: `initializeApp` with the values from `process.env`, and exports
+  `db`, `storage` and `auth` (AsyncStorage persistence on phones, `getAuth` on web).
+
+### 6. Create the Phase 1 screens and components
+
+```
+app/
+  _layout.tsx                  root Stack: "auth" and "(protected)"
+  auth.tsx                     placeholder sign-in screen with a "Continue" button
+  (protected)/
+    _layout.tsx                Stack for the signed-in part of the app
+    (tabs)/
+      _layout.tsx              Tabs: Home and Profile
+      index.tsx                Home: post list + "+" button that opens PostForm
+      profile.tsx              Profile
+    postDetails/
+      [id].tsx                 one post (dynamic route)
+components/
+  PostForm.tsx                 create-post popup (<Modal>)
+```
+
+### 7. Run it and commit
+
+```bash
+npx expo start -c        # scan the QR code with Expo Go, or press w for web
+npx tsc --noEmit         # check for TypeScript errors
+
+git init
+git add -A
+git commit -m "Phase 1: project setup, navigation and PostForm modal"
+git switch -c phase-1
+```
+
+Every later phase starts from the previous branch: `git switch -c phase-2` while on `phase-1`, and so on.
+
+---
+
 ## `main` / `phase-1`: Project setup and navigation
 
 No Firebase features yet.
