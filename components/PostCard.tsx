@@ -1,6 +1,6 @@
 import { Link } from "expo-router";
 import { Pressable, View, Text, Image, StyleSheet } from "react-native";
-import { PostData } from "@/types/post";
+import { PostData } from "@/utils/postData";
 
 // One post in the Home list. Tapping it opens the detail page.
 export default function PostCard({ post }: { post: PostData }) {
