@@ -5,7 +5,7 @@ Switch with `git checkout phase-N`, then run `npm install` if the dependencies c
 
 ```
 main ── phase-1 ── phase-2 ── phase-3 ── phase-4 ── phase-5            (likes)
-                                            └── phase-5-comments       (comments, alternative)
+                                            
 ```
 
 ## Overview
@@ -18,7 +18,6 @@ main ── phase-1 ── phase-2 ── phase-3 ── phase-4 ── phase-5 
 | `phase-3` | Posts saved in Firestore: list, details, delete your own post | `api/postApi.ts`, `components/PostCard.tsx`, `utils/postData.ts` | — |
 | `phase-4` | A photo on every post (gallery or camera), uploaded to Firebase Storage | `api/imageApi.ts`, `components/ImageSelector.tsx` | expo-image-picker, expo-camera, expo-device |
 | `phase-5` | Likes: like / unlike, like count on Home, "Liked by" on the detail page | — | — |
-| `phase-5-comments` | Comments instead of likes: add / edit / delete your own comments | `api/commentApi.ts`, `components/CommentModal.tsx`, `components/CommentsSection.tsx`, `components/PhotoCamera.tsx` | expo-image-picker, expo-camera |
 
 ---
 
@@ -371,20 +370,4 @@ No Firebase features yet.
 - [x] Optimistic update, rolled back if saving fails
 - [x] `post.likes ?? []` for older posts without a `likes` field
 
-## `phase-5-comments`: Comments (alternative to `phase-5`)
 
-Branches off an earlier Phase 4 commit, so it uses `components/PhotoCamera.tsx`
-instead of `ImageSelector.tsx`. Follows the Session 6 approach.
-
-- [x] `comments: string[]` on `PostData`, plus `CommentData` / `CommentObject` types
-- [x] `api/commentApi.ts`: `addComment`, `getCommentsByIds`, `updateComment`, `deleteComment`, `deleteCommentsByIds`
-- [x] `components/CommentModal.tsx`: one popup for adding and editing
-- [x] `components/CommentsSection.tsx`: list, **+ Add comment**, edit / delete icons on your own comments
-- [x] Deleting a post also deletes its comments
-- [x] Optimistic updates; ownership is checked by UID
-
----
-
-## Coming next
-
-- [ ] **Phase 6:** Firestore / Storage security rules and a concepts guide
