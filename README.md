@@ -97,8 +97,8 @@ You need **Node.js** and the **Expo Go** app on your phone (it must support Expo
 - `package.json` uses `"main": "expo-router/entry"`, so Expo Router handles navigation.
   All packages were added with `npx expo install`, which picks versions that match the SDK.
 - **Navigation** (file-based routing with Expo Router):
-  - `app/_layout.tsx`: the root **Stack** with two screens, `login` and `(protected)`.
-  - `app/login.tsx`: a placeholder login screen with a "Continue" button.
+  - `app/_layout.tsx`: the root **Stack** with two screens, `auth` and `(protected)`.
+  - `app/auth.tsx`: a placeholder login screen with a "Continue" button.
   - `app/(protected)/(tabs)/_layout.tsx`: **Tabs** with **Home** and **Profile** (AntDesign icons).
   - `app/(protected)/postDetails/[id].tsx`: a **dynamic route** for one post.
     It is pushed on top of the tabs, so the tab bar hides and a Back button appears.
@@ -119,8 +119,8 @@ You need **Node.js** and the **Expo Go** app on your phone (it must support Expo
 | `api/authApi.ts` | `signInWithEmail`, `signUpWithEmail` (also saves the name with `updateProfile`), `signOutUser`, and friendly error messages for Firebase error codes |
 | `context/AuthContext.tsx` | `AuthProvider` listens to `onAuthStateChanged` and shares `{ user, loading }`. Screens read it with `useAuth()` |
 | `app/_layout.tsx` | Wraps the root Stack in `<AuthProvider>` |
-| `app/(protected)/_layout.tsx` | **Auth guard:** shows a spinner while `loading`, `<Redirect href="/login" />` if there is no user, otherwise the screens |
-| `app/login.tsx` | Sign in / Register toggle, email and password fields (plus name when registering), error text, spinner while waiting |
+| `app/(protected)/_layout.tsx` | **Auth guard:** shows a spinner while `loading`, `<Redirect href="/auth" />` if there is no user, otherwise the screens |
+| `app/auth.tsx` | Sign in / Register toggle, email and password fields (plus name when registering), error text, spinner while waiting |
 | `app/(protected)/(tabs)/profile.tsx` | Shows the user's name and email, and a **Sign out** button |
 
 How the screens change, without any `router.push` calls:
@@ -128,7 +128,7 @@ How the screens change, without any `router.push` calls:
 - **Signing in or registering** sets `user` in `AuthContext`. The login screen
   sees `user` and renders `<Redirect href="/" />`, which goes to Home.
 - **Signing out** sets `user` to `null`. The guard in `app/(protected)/_layout.tsx`
-  renders `<Redirect href="/login" />`.
+  renders `<Redirect href="/auth" />`.
 - **Restarting the app:** `firebaseConfig.ts` saves the session with AsyncStorage
   (localStorage on web), so you stay signed in.
 
@@ -146,7 +146,7 @@ How the screens change, without any `router.push` calls:
 
 | File | What it does |
 |------|--------------|
-| `types/post.ts` | `PostData` (a post read from Firestore) and `NewPostData` (what the form sends) |
+| `utils/postData.ts` | `PostData` (a post read from Firestore) and `NewPostData` (what the form sends) |
 | `api/postApi.ts` | `createPost`, `getAllPosts` (newest first), `getPostById`, `deletePost` |
 | `components/PostCard.tsx` | One post in the list (title + author), and a `Link` to the detail page |
 | `app/(protected)/(tabs)/index.tsx` | Loads posts in `useFocusEffect`, pull-to-refresh with `RefreshControl`, and the **+** button opens `PostForm` |
@@ -200,7 +200,7 @@ New packages, installed with `npx expo install expo-image-picker expo-camera exp
 | `components/PostForm.tsx` | Uses `<ImageSelector imageUri={…} onChange={…} />`, and checks that a photo was chosen ("Photo is required") |
 | `api/imageApi.ts` | `uploadImage(localUri)`: reads the file with `fetch(...).blob()`, uploads it to `posts/{uid}/{time}.jpg` with `uploadBytes`, and returns the `getDownloadURL` link |
 | `app/(protected)/(tabs)/index.tsx` | Saving a post now means: 1) upload the photo, 2) save the post with its `imageUrl` |
-| `types/post.ts` | `imageUrl` added to `PostData` and `NewPostData` |
+| `utils/postData.ts` | `imageUrl` added to `PostData` and `NewPostData` |
 | `components/PostCard.tsx`, `app/(protected)/postDetails/[id].tsx` | Show the image |
 
 Things to notice:
@@ -241,7 +241,7 @@ and the detail page shows who liked it.
 
 | File | What it does |
 |------|--------------|
-| `types/post.ts` | New `Like` type (`{ uid, name }`) and `likes: Like[]` on `PostData` |
+| `utils/postData.ts` | New `Like` type (`{ uid, name }`) and `likes: Like[]` on `PostData` |
 | `api/postApi.ts` | New posts start with `likes: []`. New `toggleLike(postId, like, liked)` |
 | `components/PostCard.tsx` | Heart + count on every Home card: **gray** heart when nobody has liked it, **red** when someone has |
 | `app/(protected)/postDetails/[id].tsx` | Like button (filled when *you* have liked it), "N likes", and "Liked by Ada, Bob" |

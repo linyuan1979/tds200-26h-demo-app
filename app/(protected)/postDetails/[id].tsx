@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "@/context/AuthContext";
-import { PostData, Like } from "@/types/post";
+import { PostData, Like } from "@/utils/postData";
 import { getPostById, deletePost, toggleLike } from "@/api/postApi";
 
 // Detail screen. The [id] in the file name becomes a URL parameter.
