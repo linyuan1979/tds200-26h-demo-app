@@ -161,6 +161,164 @@ Every later phase starts from the previous branch: `git switch -c phase-2` while
 
 ---
 
+## Config files explained
+
+### `.env` and `.env.example`
+
+`.env` holds the settings that are **different for every student**: the values of your own
+Firebase project. The app reads them when it starts, so the code never contains them.
+
+```
+EXPO_PUBLIC_FIREBASE_API_KEY=your-api-key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.firebasestorage.app
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+EXPO_PUBLIC_FIREBASE_APP_ID=your-app-id
+```
+
+| Variable | What it is |
+|----------|------------|
+| `API_KEY` | Identifies your Firebase project when the app talks to Google's servers |
+| `AUTH_DOMAIN` | The domain Firebase Authentication uses (`<project-id>.firebaseapp.com`) |
+| `PROJECT_ID` | The name of your project. Firestore uses it to find your database |
+| `STORAGE_BUCKET` | Where Firebase Storage keeps your uploaded images |
+| `MESSAGING_SENDER_ID` | Used by Firebase Cloud Messaging (we don't use it, but it is part of the config) |
+| `APP_ID` | Identifies this web app inside your Firebase project |
+
+You find all six in **Firebase console → Project settings → Your apps → Web app → SDK setup and configuration**.
+
+Things to know:
+
+- **Two files, two jobs.** `.env.example` is committed to git and only has placeholders,
+  so everyone knows *which* variables are needed. `.env` has the real values and is in
+  `.gitignore`, so it is never committed. Start with `cp .env.example .env`.
+- **The `EXPO_PUBLIC_` prefix is required.** Expo only puts variables that start with
+  `EXPO_PUBLIC_` into the app code (`process.env.EXPO_PUBLIC_...`). Other variables are ignored.
+- **Restart with `npx expo start -c` after changing `.env`.** The values are copied into
+  the app when it is bundled, and `-c` clears the old bundle.
+- **These values are not really secret.** Everything with `EXPO_PUBLIC_` ends up inside the
+  app, and anyone could read it there. What actually protects your data is
+  **Firebase Authentication + Security Rules** (Phase 6). We still keep `.env` out of git
+  so each student uses their own project and the keys aren't spread around online.
+
+### `firebaseConfig.ts`
+
+This file connects the app to Firebase **once**, and every other file imports what it needs from here:
+
+```ts
+import { db, storage, auth } from "@/firebaseConfig";
+```
+
+What it does, step by step:
+
+1. **Builds the config object** from `.env`:
+   ```ts
+   const firebaseConfig = {
+     apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+     projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+     // ... the other four
+   };
+   ```
+2. **Connects to the project:** `const app = initializeApp(firebaseConfig);`
+3. **Creates the three services the app uses:**
+
+   | Export | Service | Used in |
+   |--------|---------|---------|
+   | `auth` | Firebase Authentication (who is signed in) | Phase 2: `api/authApi.ts`, `context/AuthContext.tsx` |
+   | `db` | Firestore database (posts, likes, comments) | Phase 3: `api/postApi.ts` |
+   | `storage` | Firebase Storage (image files) | Phase 4: `api/imageApi.ts` |
+
+4. **Keeps the user signed in after a restart.** This is the only tricky part:
+
+   ```ts
+   function createAuth() {
+     if (Platform.OS === "web") {
+       return getAuth(app);
+     }
+     const { getReactNativePersistence } = require("@firebase/auth/dist/rn/index.js");
+     return initializeAuth(app, {
+       persistence: getReactNativePersistence(AsyncStorage),
+     });
+   }
+   ```
+
+   - **On web**, `getAuth(app)` already saves the session in the browser's `localStorage`.
+   - **On a phone**, there is no `localStorage`. Without help, Firebase forgets the user
+     every time the app restarts. `initializeAuth(..., getReactNativePersistence(AsyncStorage))`
+     tells Firebase to save the session in **AsyncStorage** (the phone's key-value storage) instead.
+   - **Why `require(...)` instead of `import`?** `getReactNativePersistence` only exists in
+     Firebase's React Native build. Loading it with `require` *inside* the `if` means the web
+     version of the app never tries to load it.
+
+Why one shared file? If every screen called `initializeApp` itself, Firebase would complain
+that the app is already initialized, and different screens could end up with different
+`auth` objects that disagree about who is signed in.
+
+### `app.json`
+
+`app.json` describes the app to Expo: its name, icons, and which native features it uses.
+It is read when the app is **built or started**, not while it runs.
+
+```json
+{
+  "expo": {
+    "name": "Demo App",
+    "slug": "demo-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true },
+    "android": { "adaptiveIcon": { "...": "..." }, "predictiveBackGestureEnabled": false },
+    "web": { "bundler": "metro", "favicon": "./assets/favicon.png" },
+    "plugins": ["expo-router", "expo-status-bar", "expo-font"],
+    "scheme": "demoapp",
+    "experiments": { "typedRoutes": true }
+  }
+}
+```
+
+| Key | What it does |
+|-----|--------------|
+| `name` | The name shown under the app icon |
+| `slug` | A URL-friendly name Expo uses for the project (no spaces) |
+| `version` | The version number users see in the app store |
+| `orientation` | `"portrait"` locks the app upright |
+| `icon` | The app icon (`assets/icon.png`) |
+| `userInterfaceStyle` | `"light"` always uses light mode (no automatic dark mode) |
+| `ios.supportsTablet` | The app can also run full-screen on iPad |
+| `android.adaptiveIcon` | Android icon layers, so the icon fits any shape (circle, square, …) |
+| `android.predictiveBackGestureEnabled` | Turns off Android's new "peek back" gesture animation |
+| `web.bundler` | `"metro"` uses the same bundler for web as for phones (needed by Expo Router) |
+| `web.favicon` | The small icon in the browser tab |
+| `plugins` | Packages that need to change the native app setup (see below) |
+| `scheme` | `demoapp://` links open this app. Expo Router needs a scheme for deep links |
+| `experiments.typedRoutes` | Expo Router writes types for all routes, so a typo like `href="/aut"` is a TypeScript error |
+
+**Plugins grow with the phases.** Phase 4 adds two plugins with the text shown when the app
+asks for permission:
+
+```json
+["expo-image-picker", {
+  "photosPermission": "Allow $(PRODUCT_NAME) to choose photos for your posts.",
+  "microphonePermission": false
+}],
+["expo-camera", {
+  "cameraPermission": "Allow $(PRODUCT_NAME) to take photos for your posts.",
+  "microphonePermission": false,
+  "recordAudioAndroid": false
+}]
+```
+
+`$(PRODUCT_NAME)` is replaced by the app's name. `microphonePermission: false` means
+we never ask for the microphone, because we only take photos, not videos.
+
+> In **Expo Go** you can test without these plugins, because Expo Go already has the
+> permissions. They matter when you make your own build (`npx expo run:ios` or `eas build`).
+
+---
+
 ## `main` / `phase-1`: Project setup and navigation
 
 No Firebase features yet.
