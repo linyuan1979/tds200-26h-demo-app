@@ -13,7 +13,7 @@ main ── phase-1 ── phase-2 ── phase-3 ── phase-4 ── phase-5 
 | Branch | Feature | New files | New packages |
 |--------|---------|-----------|--------------|
 | `main` | Starting point: project setup, navigation, create-post popup | — | expo-router, @expo/vector-icons, firebase, async-storage |
-| `phase-1` | Like `main`, but without `auth.tsx` and the `(protected)` group, and the detail route is `postDetails/[id]` | — | — |
+| `phase-1` | Same as `main` | — | — |
 | `phase-2` | Firebase email/password authentication and an auth guard | `api/authApi.ts`, `context/AuthContext.tsx`, `app/auth.tsx`, `app/(protected)/_layout.tsx`, `README.md` | — |
 | `phase-3` | Posts saved in Firestore: list, details, delete your own post | `api/postApi.ts`, `components/PostCard.tsx`, `utils/postData.ts` | — |
 | `phase-4` | A photo on every post (gallery or camera), uploaded to Firebase Storage | `api/imageApi.ts`, `components/ImageSelector.tsx` | expo-image-picker, expo-camera, expo-device |
@@ -323,7 +323,6 @@ No Firebase features yet.
 - [x] Root **Stack** (`app/_layout.tsx`) with the `(tabs)` and `postDetails/[id]` screens
 - [x] **Tabs** with Home and Profile (`app/(tabs)/_layout.tsx`)
 - [x] Dynamic route for one post: `app/postDetails/[id].tsx`
-      (on `main` it is still called `post/[id].tsx`)
 - [x] No sign-in screen and no `(protected)` group yet: both come in Phase 2
 - [x] Create-post popup `components/PostForm.tsx` (`<Modal>`), opened by the **+** button on Home
 - [x] New posts are kept only in state, so they disappear on reload
