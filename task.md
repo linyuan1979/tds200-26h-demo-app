@@ -13,8 +13,8 @@ main ── phase-1 ── phase-2 ── phase-3 ── phase-4 ── phase-5 
 | Branch | Feature | New files | New packages |
 |--------|---------|-----------|--------------|
 | `main` | Starting point: project setup, navigation, create-post popup | — | expo-router, @expo/vector-icons, firebase, async-storage |
-| `phase-1` | Same as `main`, but the detail route is `postDetails/[id]` | — | — |
-| `phase-2` | Firebase email/password authentication and an auth guard | `api/authApi.ts`, `context/AuthContext.tsx`, `README.md` | — |
+| `phase-1` | Like `main`, but without `auth.tsx` and the `(protected)` group, and the detail route is `postDetails/[id]` | — | — |
+| `phase-2` | Firebase email/password authentication and an auth guard | `api/authApi.ts`, `context/AuthContext.tsx`, `app/auth.tsx`, `app/(protected)/_layout.tsx`, `README.md` | — |
 | `phase-3` | Posts saved in Firestore: list, details, delete your own post | `api/postApi.ts`, `components/PostCard.tsx`, `utils/postData.ts` | — |
 | `phase-4` | A photo on every post (gallery or camera), uploaded to Firebase Storage | `api/imageApi.ts`, `components/ImageSelector.tsx` | expo-image-picker, expo-camera, expo-device |
 | `phase-5` | Likes: like / unlike, like count on Home, "Liked by" on the detail page | — | — |
@@ -130,16 +130,13 @@ Now you can write `import PostForm from "@/components/PostForm"` instead of `"..
 
 ```
 app/
-  _layout.tsx                  root Stack: "auth" and "(protected)"
-  auth.tsx                     placeholder sign-in screen with a "Continue" button
-  (protected)/
-    _layout.tsx                Stack for the signed-in part of the app
-    (tabs)/
-      _layout.tsx              Tabs: Home and Profile
-      index.tsx                Home: post list + "+" button that opens PostForm
-      profile.tsx              Profile
-    postDetails/
-      [id].tsx                 one post (dynamic route)
+  _layout.tsx                  root Stack: "(tabs)" and "postDetails/[id]"
+  (tabs)/
+    _layout.tsx                Tabs: Home and Profile
+    index.tsx                  Home: post list + "+" button that opens PostForm
+    profile.tsx                Profile
+  postDetails/
+    [id].tsx                   one post (dynamic route)
 components/
   PostForm.tsx                 create-post popup (<Modal>)
 ```
@@ -323,11 +320,11 @@ we never ask for the microphone, because we only take photos, not videos.
 No Firebase features yet.
 
 - [x] Expo SDK 57 + TypeScript, `"main": "expo-router/entry"`
-- [x] Root **Stack** (`app/_layout.tsx`) with the `auth` and `(protected)` screens
-- [x] Placeholder sign-in screen (`app/auth.tsx`) with a "Continue" button
-- [x] **Tabs** with Home and Profile (`app/(protected)/(tabs)/_layout.tsx`)
-- [x] Dynamic route for one post: `app/(protected)/postDetails/[id].tsx`
+- [x] Root **Stack** (`app/_layout.tsx`) with the `(tabs)` and `postDetails/[id]` screens
+- [x] **Tabs** with Home and Profile (`app/(tabs)/_layout.tsx`)
+- [x] Dynamic route for one post: `app/postDetails/[id].tsx`
       (on `main` it is still called `post/[id].tsx`)
+- [x] No sign-in screen and no `(protected)` group yet: both come in Phase 2
 - [x] Create-post popup `components/PostForm.tsx` (`<Modal>`), opened by the **+** button on Home
 - [x] New posts are kept only in state, so they disappear on reload
 - [x] `firebaseConfig.ts` reads the `EXPO_PUBLIC_*` variables (no screen uses it yet)
@@ -336,8 +333,10 @@ No Firebase features yet.
 
 - [x] `api/authApi.ts`: sign in, register (saves the name with `updateProfile`), sign out, friendly error messages
 - [x] `context/AuthContext.tsx`: `AuthProvider` + `useAuth()` sharing `{ user, loading }`
+- [x] `(tabs)` and `postDetails/` move into a new `app/(protected)/` route group
 - [x] Auth guard in `app/(protected)/_layout.tsx`: shows a spinner while loading, redirects to `/auth` when there is no user
-- [x] `app/auth.tsx`: Sign in / Register toggle, name field when registering, error text, spinner
+- [x] `app/auth.tsx` (new): Sign in / Register toggle, name field when registering, error text, spinner
+- [x] Root Stack (`app/_layout.tsx`) now has the `auth` and `(protected)` screens, wrapped in `<AuthProvider>`
 - [x] Profile shows the user's name and email and has a **Sign out** button
 - [x] Stays signed in after a restart (AsyncStorage persistence)
 
