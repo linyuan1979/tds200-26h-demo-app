@@ -1,14 +1,14 @@
 import { Stack } from "expo-router";
 
 // Root layout: the top-level Stack.
-// - auth         → public screen
-// - (protected)  → everything else; the guard lives in app/(protected)/_layout.tsx
-// Phase 2 wraps this Stack in <AuthProvider>.
+// - (tabs)            → Home and Profile
+// - postDetails/[id]  → one post, pushed on top of the tabs
+// Phase 2 adds the auth screen and moves these into a (protected) group.
 export default function RootLayout() {
   return (
     <Stack>
-      <Stack.Screen name="(protected)" options={{ headerShown: false }} />
-      <Stack.Screen name="auth" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="postDetails/[id]" options={{ title: "Post", headerBackTitle: "Back" }} />
     </Stack>
   );
 }
